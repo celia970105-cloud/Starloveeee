@@ -2050,7 +2050,7 @@ export default function PetsModule({ currentUser }: PetsModuleProps) {
       {/* REFRIGERATOR OVERLAY CONTAINER (Sliding Popup Modal) */}
       <AnimatePresence>
         {isFridgeOpen && (
-          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 fridge-open">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -2062,7 +2062,7 @@ export default function PetsModule({ currentUser }: PetsModuleProps) {
                   setIsFridgeOpen(false);
                   setFridgeMessage("");
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-[#FF799C] transition-all p-1 hover:bg-gray-100 rounded-full cursor-pointer"
+                className="absolute z-10 top-4 right-4 text-gray-400 hover:text-[#FF799C] transition-all p-1 hover:bg-gray-100 rounded-full cursor-pointer"
               >
                 <X className="h-6 w-6" />
               </button>

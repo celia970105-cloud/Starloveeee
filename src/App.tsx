@@ -305,7 +305,7 @@ export default function App() {
       </div>
 
       {/* Main Container Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 z-10 text-[#6E4B55]">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 z-10 text-[#6E4B55] has-[.fridge-open]:z-50 has-[.modal-open-layer]:z-50">
         <AnimatePresence mode="wait">
           {activeModule === "home" && (
             /* Home Visual + Stars Grid Entry */
