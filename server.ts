@@ -468,14 +468,6 @@ app.post("/api/posts/:type", (req, res) => {
     };
     db.posts_photos.push(post);
 
-    // Reward user with 50 star coins for uploading a photo
-    if (payload.user_id && payload.user_id !== "anonymous") {
-      const userIdx = db.users.findIndex((u: any) => u.id === payload.user_id);
-      if (userIdx !== -1) {
-        db.users[userIdx].star_coins = (db.users[userIdx].star_coins || 0) + 50;
-      }
-    }
-
     writeDb(db);
     return res.json({ success: true, post });
   } 
@@ -523,7 +515,7 @@ app.post("/api/posts/:type", (req, res) => {
     if (!title) {
       return res.status(400).json({ error: "請填寫音樂名稱！" });
     }
-    const exists = db.posts_music.some((m: any) => m.title.trim().toLowerCase() === title.toLowerCase());
+    const exists = db.posts_music.some((m: any) => m.status !== "rejected" && m.title.trim().toLowerCase() === title.toLowerCase());
     if (exists) {
       return res.status(400).json({ error: "此音樂名稱已存在，請使用其他名稱！" });
     }
@@ -605,7 +597,18 @@ app.post("/api/admin/action", (req, res) => {
   }
 
   if (action === "approve") {
+    const prevStatus = collection[itemIdx].status;
     collection[itemIdx].status = "approved";
+    // If the post was not previously approved, reward the user with 50 star coins
+    if (prevStatus !== "approved") {
+      const postUserId = collection[itemIdx].user_id;
+      if (postUserId && postUserId !== "anonymous") {
+        const userIdx = db.users.findIndex((u: any) => u.id === postUserId);
+        if (userIdx !== -1) {
+          db.users[userIdx].star_coins = (db.users[userIdx].star_coins || 0) + 50;
+        }
+      }
+    }
   } else if (action === "reject") {
     collection[itemIdx].status = "rejected";
   } else if (action === "delete") {
@@ -708,9 +711,23 @@ app.post("/api/friends/add", (req, res) => {
 
   const db = readDb();
   const query = targetUsernameOrEmail.toLowerCase().trim();
-  const targetUser = db.users.find(
-    (u: any) => u.username.toLowerCase() === query || u.email.toLowerCase() === query
+  
+  // Find by exact match (trimmed and lowercased) or direct ID match
+  let targetUser = db.users.find(
+    (u: any) => 
+      u.username.trim().toLowerCase() === query || 
+      u.email.trim().toLowerCase() === query ||
+      u.id.trim().toLowerCase() === query
   );
+
+  // Fallback: find by partial match if exact match wasn't found
+  if (!targetUser) {
+    targetUser = db.users.find(
+      (u: any) => 
+        u.username.toLowerCase().includes(query) || 
+        u.email.toLowerCase().includes(query)
+    );
+  }
 
   if (!targetUser) {
     return res.status(404).json({ error: "找不到該用戶，請檢查輸入的用戶名或 Email" });

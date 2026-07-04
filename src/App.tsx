@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Star, Camera, Film, Mail, Palette, Music, Sparkles, Smile, Shield, User as UserIcon, Heart, Compass, Layout } from "lucide-react";
+import { useLanguage } from "./context/LanguageContext";
 
 // Components
 import StarryBackground from "./components/StarryBackground";
@@ -18,6 +19,7 @@ import AdminModule from "./components/AdminModule";
 import { User } from "./types";
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage();
   const [showIntro, setShowIntro] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeModule, setActiveModule] = useState<string>("home");
@@ -153,13 +155,28 @@ export default function App() {
     setActiveModule("home");
   };
 
+  const getNavLabel = (id: string, customLabel: string) => {
+    const defaultLabels: Record<string, string[]> = {
+      gallery: ["圖片相簿", "相片應援"],
+      video: ["影片專區", "影音珍藏"],
+      letters: ["紙短情長", "星星信箱"],
+      museum: ["美術展覽館", "星願畫廊"],
+      pets: ["星寵家園"],
+    };
+    const isDefault = !customLabel || defaultLabels[id]?.includes(customLabel);
+    if (isDefault) {
+      return t(id);
+    }
+    return customLabel;
+  };
+
   // Navigations mapping
   const navItems = [
-    { id: "gallery", label: galleryTitle, icon: Camera },
-    { id: "video", label: videoTitle, icon: Film },
-    { id: "letters", label: lettersTitle, icon: Mail },
-    { id: "museum", label: museumTitle, icon: Palette },
-    { id: "pets", label: petsTitle, icon: Smile },
+    { id: "gallery", label: getNavLabel("gallery", galleryTitle), icon: Camera },
+    { id: "video", label: getNavLabel("video", videoTitle), icon: Film },
+    { id: "letters", label: getNavLabel("letters", lettersTitle), icon: Mail },
+    { id: "museum", label: getNavLabel("museum", museumTitle), icon: Palette },
+    { id: "pets", label: getNavLabel("pets", petsTitle), icon: Smile },
   ];
 
   return (
@@ -187,10 +204,10 @@ export default function App() {
             </div>
             <div className="text-left">
               <span className="text-[10px] font-mono tracking-[0.25em] text-[#FF799C] block uppercase font-bold">
-                ALL FOR JIYU
+                {t("all_for_jiyu")}
               </span>
               <h1 className="text-lg font-serif font-light tracking-widest text-[#FF799C]">
-                Starry Support
+                {t("starry_support")}
               </h1>
             </div>
           </div>
@@ -214,6 +231,19 @@ export default function App() {
 
           {/* User Auth Widgets */}
           <div className="flex items-center gap-3">
+            {/* Language Selection Dropdown */}
+            <div className="flex items-center gap-1 bg-white/60 hover:bg-white border border-[#FF799C]/20 rounded-xl px-2.5 py-1.5 transition-all shadow-sm">
+              <span className="text-xs">🌐</span>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as any)}
+                className="bg-transparent text-[#6E4B55] text-xs cursor-pointer focus:outline-none font-sans font-medium"
+              >
+                <option value="zh-TW">繁體</option>
+                <option value="zh-CN">简体</option>
+                <option value="en">English</option>
+              </select>
+            </div>
 
             {currentUser?.role === "admin" && (
               <button
@@ -298,11 +328,11 @@ export default function App() {
                     <span className="text-[10px] font-mono tracking-[0.4em] text-[#FF799C] block uppercase font-bold">
                       ZACK • EXCLUSIVE DEBUT • JEREMY
                     </span>
-                    <h2 className="text-4xl md:text-5xl font-serif font-light text-[#FF799C] tracking-widest mt-2 leading-tight">
-                      {heroTitle}
+                    <h2 id="home-hero-title" className="text-4xl md:text-5xl font-serif font-light text-[#FF799C] tracking-widest mt-2 leading-tight">
+                      {!heroTitle || heroTitle === "ALL FOR JIYU" || heroTitle === "極禹 TOP 1 雙向奔赴" ? t("hero_title") : heroTitle}
                     </h2>
                     <p className="text-[#6E4B55]/70 text-xs mt-3 tracking-widest max-w-md font-sans leading-relaxed">
-                      {heroSub}
+                      {!heroSub || heroSub.startsWith("ALL FOR JIYU - 專屬 Jiyu") || heroSub.startsWith("在這裡記錄每一次") ? t("hero_sub") : heroSub}
                     </p>
                   </div>
 
@@ -323,7 +353,7 @@ export default function App() {
                       }, 750);
                     }}
                     className="relative mt-28 md:mt-24 h-[330px] w-full flex items-center justify-center cursor-pointer group select-none"
-                    title="點擊這顆主星進入星願傳送門！✨"
+                    title={t("portal_tip")}
                   >
                     {/* Glowing background star aura */}
                     <div className="absolute h-64 w-64 rounded-full bg-[#FF799C]/15 blur-3xl animate-pulse group-hover:scale-110 transition-transform" />
@@ -510,7 +540,7 @@ export default function App() {
                     黑膠音軌唱片機
                   </h3>
                 </div>
-                <MusicPlayer currentUser={currentUser} />
+                <MusicPlayer currentUser={currentUser} onRefreshData={refreshCurrentUser} />
               </div>
             </motion.div>
           )}
@@ -601,7 +631,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <GalleryModule currentUser={currentUser} />
+              <GalleryModule currentUser={currentUser} onRefreshData={refreshCurrentUser} />
             </motion.div>
           )}
 
@@ -612,7 +642,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <VideoModule currentUser={currentUser} />
+              <VideoModule currentUser={currentUser} onRefreshData={refreshCurrentUser} />
             </motion.div>
           )}
 
@@ -623,7 +653,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <LettersModule currentUser={currentUser} />
+              <LettersModule currentUser={currentUser} onRefreshData={refreshCurrentUser} />
             </motion.div>
           )}
 
@@ -634,7 +664,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <MuseumModule currentUser={currentUser} />
+              <MuseumModule currentUser={currentUser} onRefreshData={refreshCurrentUser} />
             </motion.div>
           )}
 
@@ -672,7 +702,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <AdminModule currentUser={currentUser} />
+              <AdminModule currentUser={currentUser} onRefreshData={refreshCurrentUser} />
             </motion.div>
           )}
         </AnimatePresence>

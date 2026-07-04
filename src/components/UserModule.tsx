@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { LogIn, UserPlus, LogOut, CheckCircle, AlertCircle, Edit3, Image, Shield, Sparkles, FolderHeart } from "lucide-react";
 import { User } from "../types";
+import { useLanguage } from "../context/LanguageContext";
 
 interface UserModuleProps {
   currentUser: User | null;
@@ -11,6 +12,7 @@ interface UserModuleProps {
 }
 
 export default function UserModule({ currentUser, onLoginSuccess, onLogout, refreshCurrentUser }: UserModuleProps) {
+  const { t } = useLanguage();
   // Tabs: 'login' | 'register' | 'profile'
   const [activeTab, setActiveTab] = useState<"login" | "register" | "profile">("login");
 
@@ -321,13 +323,13 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
             onClick={() => setActiveTab("login")}
             className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${activeTab === "login" ? "bg-[#FF799C] text-white shadow-md shadow-[#FF799C]/20" : "text-[#6E4B55]/70 hover:text-[#FF799C] bg-[#FFF6F2]/60 hover:bg-[#FFF6F2]"}`}
           >
-            登入星應站 ✦
+            {t("login")}
           </button>
           <button
             onClick={() => setActiveTab("register")}
             className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${activeTab === "register" ? "bg-[#FF799C] text-white shadow-md shadow-[#FF799C]/20" : "text-[#6E4B55]/70 hover:text-[#FF799C] bg-[#FFF6F2]/60 hover:bg-[#FFF6F2]"}`}
           >
-            快速加入 ✦
+            {t("register")}
           </button>
         </div>
       )}
@@ -786,7 +788,7 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
                 className="w-full bg-gradient-to-r from-[#FF799C] to-[#FFCCDD] hover:opacity-90 text-white font-medium text-sm py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="h-4 w-4" />
-                <span>立即登入 ✦</span>
+                <span>{t("login")}</span>
               </button>
 
               <div className="relative flex py-1 items-center">
@@ -801,7 +803,7 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
                 className="w-full bg-gradient-to-r from-violet-400 via-pink-400 to-[#FF9EAA] hover:opacity-95 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="h-4 w-4 text-amber-200 animate-pulse" />
-                <span>快速玩 / 一鍵訪客加入 🚀</span>
+                <span>{t("quick_join")}</span>
               </button>
             </form>
 
@@ -825,7 +827,7 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
                   type="button"
                   onClick={() => {
                     setLoginEmail("zack@starry.com");
-                    setLoginPassword("user123");
+                    setLoginPassword("password123");
                   }}
                   className="px-3.5 py-2 rounded-xl bg-[#FFF6F2] border border-[#FF799C]/15 text-[#6E4B55]/80 hover:bg-[#FFF6F2]/80 transition-all font-mono cursor-pointer"
                 >

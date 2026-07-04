@@ -186,7 +186,7 @@ export default function AdminModule({ currentUser, onRefreshData }: AdminModuleP
         <Shield className="h-16 w-16 text-[#FF799C] mx-auto animate-pulse" />
         <h3 className="text-2xl font-serif font-light text-[#FF799C]">權限不足 (Access Denied)</h3>
         <p className="text-[#6E4B55]/70 text-sm max-w-md mx-auto">
-          「管理員控台」為 ZACK, JEREMY 與 Jiyu 應援最高權限人員專屬控制區。請先點選右上方登入，並切換至最高管理員測試帳號登入 (celia970195@gmail.com)。
+          「管理員控台」為 ZACK, JEREMY 與 Jiyu 應援最高權限人員專屬控制區。請先點選右上方登入，並切換至最高管理員測試帳號登入 (celia970105@gmail.com)。
         </p>
       </div>
     );
