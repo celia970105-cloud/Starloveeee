@@ -256,6 +256,129 @@ app.post("/api/auth/register", (req, res) => {
   res.json({ user: userWithoutPassword });
 });
 
+// Auth API: quick-join (一鍵快速加入)
+app.post("/api/auth/quick-join", (req, res) => {
+  const db = readDb();
+  const guestId = `guest_${Date.now()}`;
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const username = `訪客_${randomSuffix}`;
+  const email = `${guestId}@starry.com`;
+  const password = `guest_${Math.random().toString(36).substring(2, 8)}`;
+
+  const defaultSoloPet = {
+    name: "棉花糖糖",
+    fullness: 60,
+    love: 70,
+    coins: 120,
+    furniture: [
+      { id: "bed", name: "棉花糖蓬蓬床", x: 20, y: 150, description: "圓潤香甜的草莓棉花糖大床" },
+      { id: "sofa", name: "蜜桃雲朵沙發", x: 190, y: 160, description: "像雲朵般舒適的圓角粉紅小沙發" },
+      { id: "lamp", name: "流星粉紅檯燈", x: 30, y: 55, description: "散發溫暖星光的蜜桃色落地燈" },
+      { id: "rug", name: "蝴蝶結草莓地毯", x: 105, y: 165, description: "鋪在房內中央的可愛蝴蝶結毛絨絨地毯" },
+      { id: "fridge", name: "草莓波點冰箱", x: 120, y: 50, description: "可以點擊查看食物美味的 retro 粉色小冰箱" }
+    ],
+    fridge: { cotton_candy: 3, peach_juice: 2, star_macaron: 1, cherry_pudding: 1 },
+    custom_skin: ""
+  };
+
+  const newUser = {
+    id: guestId,
+    username,
+    email,
+    password,
+    role: "user" as const,
+    avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${guestId}`,
+    background: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1200",
+    star_coins: 120,
+    is_guest: true,
+    solo_pet: defaultSoloPet
+  };
+
+  db.users.push(newUser);
+
+  // Also create a starter pet in db.pets for public modules
+  const starterPet = {
+    id: `pet_${Date.now()}`,
+    name: `${username}的星光兔`,
+    owner_id: newUser.id,
+    owner_name: username,
+    xp: 0,
+    level: 1,
+    type: "Star Bunny",
+    color: "Pink",
+    custom_appearance: { accessory: "None", vibe: "Cute" },
+    home_json: { decor: "Stardust", bed: "Cloud Bed" },
+    created_at: new Date().toISOString()
+  };
+  db.pets.push(starterPet);
+
+  writeDb(db);
+
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.json({ user: userWithoutPassword });
+});
+
+// Auth API: upgrade guest user to permanent user (綁定信箱密碼升級帳號)
+app.post("/api/users/upgrade", (req, res) => {
+  const { userId, email, password, username } = req.body;
+  if (!userId || !email || !password) {
+    return res.status(400).json({ error: "所有欄位皆為必填！" });
+  }
+
+  const db = readDb();
+  const userIdx = db.users.findIndex(u => u.id === userId);
+  if (userIdx === -1) {
+    return res.status(404).json({ error: "找不到該訪客用戶！" });
+  }
+
+  // Check if target email is already taken
+  if (db.users.some(u => u.id !== userId && u.email === email)) {
+    return res.status(400).json({ error: "此 Email 已被其他帳號註冊！" });
+  }
+
+  // Check if target username is already taken
+  if (username && db.users.some(u => u.id !== userId && u.username.toLowerCase() === username.toLowerCase())) {
+    return res.status(400).json({ error: "此用戶暱稱已被使用！" });
+  }
+
+  const user = db.users[userIdx];
+  user.email = email;
+  user.password = password;
+  if (username) {
+    user.username = username;
+    // Update owner_name in db.pets as well
+    db.pets.forEach((p: any) => {
+      if (p.owner_id === userId) {
+        p.owner_name = username;
+      }
+    });
+  }
+  user.is_guest = false;
+
+  writeDb(db);
+
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({ success: true, user: userWithoutPassword });
+});
+
+// Solo Pet Sync API: Save solo pet data
+app.post("/api/users/save-solo-pet", (req, res) => {
+  const { userId, solo_pet } = req.body;
+  if (!userId || !solo_pet) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  const db = readDb();
+  const userIdx = db.users.findIndex(u => u.id === userId);
+  if (userIdx === -1) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  db.users[userIdx].solo_pet = solo_pet;
+  writeDb(db);
+  res.json({ success: true });
+});
+
 // User Profile Update
 app.post("/api/users/update", (req, res) => {
   const { userId, username, avatar, background } = req.body;

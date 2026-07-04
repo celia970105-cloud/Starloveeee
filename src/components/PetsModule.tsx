@@ -208,7 +208,7 @@ interface FallingItem {
 }
 
 export default function PetsModule({ currentUser }: PetsModuleProps) {
-  const localKey = `local_star_pet_guest`;
+  const localKey = currentUser ? `local_star_pet_${currentUser.id}` : `local_star_pet_guest`;
 
   // Toggle Modes: "single" (Solo/Local) or "coparent" (Shared Home) or "friend" (Visiting Friend) or "plog" (PLOG Collage)
   const [activeTab, setActiveTab] = useState<"single" | "coparent" | "friend" | "plog">("single");
@@ -325,7 +325,67 @@ export default function PetsModule({ currentUser }: PetsModuleProps) {
     localStorage.setItem(`${localKey}_furniture`, JSON.stringify(soloFurniture));
     localStorage.setItem(`${localKey}_fridge`, JSON.stringify(soloFridgeFood));
     localStorage.setItem(`${localKey}_custom_skin`, soloCustomSkin);
-  }, [soloPetName, soloFullness, soloLove, soloCoins, soloFurniture, soloFridgeFood, soloCustomSkin]);
+  }, [localKey, soloPetName, soloFullness, soloLove, soloCoins, soloFurniture, soloFridgeFood, soloCustomSkin]);
+
+  // Load solo_pet from currentUser (cloud database) if available
+  useEffect(() => {
+    if (currentUser?.solo_pet) {
+      const pet = currentUser.solo_pet;
+      if (pet.name) setSoloPetName(pet.name);
+      if (pet.fullness !== undefined) setSoloFullness(pet.fullness);
+      if (pet.love !== undefined) setSoloLove(pet.love);
+      if (pet.coins !== undefined) setSoloCoins(pet.coins);
+      if (pet.furniture) setSoloFurniture(pet.furniture);
+      if (pet.fridge) setSoloFridgeFood(pet.fridge);
+      if (pet.custom_skin !== undefined) setSoloCustomSkin(pet.custom_skin);
+    } else {
+      // Fetch local storage fallback if they were a guest, or set defaults
+      const savedName = localStorage.getItem(`${localKey}_name`);
+      if (savedName) {
+        setSoloPetName(savedName);
+        const savedFullness = localStorage.getItem(`${localKey}_fullness`);
+        if (savedFullness) setSoloFullness(parseInt(savedFullness, 10));
+        const savedLove = localStorage.getItem(`${localKey}_love`);
+        if (savedLove) setSoloLove(parseInt(savedLove, 10));
+        const savedCoins = localStorage.getItem(`${localKey}_coins`);
+        if (savedCoins) setSoloCoins(parseInt(savedCoins, 10));
+        const savedFurniture = localStorage.getItem(`${localKey}_furniture`);
+        if (savedFurniture) {
+          try { setSoloFurniture(JSON.parse(savedFurniture)); } catch (e) {}
+        }
+        const savedFridge = localStorage.getItem(`${localKey}_fridge`);
+        if (savedFridge) {
+          try { setSoloFridgeFood(JSON.parse(savedFridge)); } catch (e) {}
+        }
+        const savedSkin = localStorage.getItem(`${localKey}_custom_skin`);
+        if (savedSkin) setSoloCustomSkin(savedSkin);
+      }
+    }
+  }, [currentUser?.id, localKey]);
+
+  // Debounced cloud synchronization of solo pet
+  useEffect(() => {
+    if (!currentUser) return;
+    const saveTimeout = setTimeout(() => {
+      fetch("/api/users/save-solo-pet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          solo_pet: {
+            name: soloPetName,
+            fullness: soloFullness,
+            love: soloLove,
+            coins: soloCoins,
+            furniture: soloFurniture,
+            fridge: soloFridgeFood,
+            custom_skin: soloCustomSkin
+          }
+        })
+      }).catch(err => console.error("Failed to sync solo pet to cloud", err));
+    }, 1200);
+    return () => clearTimeout(saveTimeout);
+  }, [currentUser?.id, soloPetName, soloFullness, soloLove, soloCoins, soloFurniture, soloFridgeFood, soloCustomSkin]);
 
   // Fetch active coparent group member details dynamically
   useEffect(() => {

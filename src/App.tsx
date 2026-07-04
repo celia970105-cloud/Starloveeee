@@ -87,7 +87,7 @@ export default function App() {
     if (savedPetsDesc) setPetsDesc(savedPetsDesc);
 
     // Auto-login seed user for comfortable demonstration if they reload or start
-    const savedUser = sessionStorage.getItem("starry_current_user");
+    const savedUser = localStorage.getItem("starry_current_user");
     if (savedUser) {
       try {
         setCurrentUser(JSON.parse(savedUser));
@@ -125,7 +125,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setCurrentUser(data.user);
-        sessionStorage.setItem("starry_current_user", JSON.stringify(data.user));
+        localStorage.setItem("starry_current_user", JSON.stringify(data.user));
       }
     } catch (e) {
       console.error("Failed to refresh current user:", e);
@@ -144,12 +144,12 @@ export default function App() {
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
-    sessionStorage.setItem("starry_current_user", JSON.stringify(user));
+    localStorage.setItem("starry_current_user", JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    sessionStorage.removeItem("starry_current_user");
+    localStorage.removeItem("starry_current_user");
     setActiveModule("home");
   };
 

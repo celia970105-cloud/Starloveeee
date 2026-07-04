@@ -33,6 +33,13 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState("");
 
+  // Guest Account Upgrade States
+  const [upgradeEmail, setUpgradeEmail] = useState("");
+  const [upgradePassword, setUpgradePassword] = useState("");
+  const [upgradeUsername, setUpgradeUsername] = useState("");
+  const [upgradeSuccess, setUpgradeSuccess] = useState(false);
+  const [upgradeError, setUpgradeError] = useState("");
+
   // User Submissions list state
   const [userSubmissions, setUserSubmissions] = useState<{ id: string; title: string; type: string; status: string }[]>([]);
   const [isSubmissionsLoading, setIsSubmissionsLoading] = useState(false);
@@ -63,6 +70,7 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
       setNewUsername(currentUser.username);
       setNewAvatar(currentUser.avatar);
       setNewBg(currentUser.background);
+      setUpgradeUsername(currentUser.username);
       fetchUserSubmissions();
     } else {
       setActiveTab("login");
@@ -238,6 +246,64 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
       }
     } catch (err) {
       setProfileError("與伺服器連線出錯。");
+    }
+  };
+
+  const handleQuickJoin = async () => {
+    try {
+      const res = await fetch("/api/auth/quick-join", {
+        method: "POST"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        onLoginSuccess(data.user);
+      } else {
+        const data = await res.json();
+        alert(data.error || "快速加入失敗，請重試！");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("快速加入連線失敗，請重試！");
+    }
+  };
+
+  const handleUpgradeGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpgradeError("");
+    setUpgradeSuccess(false);
+
+    if (!currentUser) return;
+
+    try {
+      const res = await fetch("/api/users/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          email: upgradeEmail,
+          password: upgradePassword,
+          username: upgradeUsername || currentUser.username
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUpgradeSuccess(true);
+        onLoginSuccess(data.user);
+        if (refreshCurrentUser) {
+          refreshCurrentUser();
+        }
+        setTimeout(() => {
+          setUpgradeSuccess(false);
+          setUpgradeEmail("");
+          setUpgradePassword("");
+        }, 3000);
+      } else {
+        const data = await res.json();
+        setUpgradeError(data.error || "綁定升級帳號失敗。");
+      }
+    } catch (err) {
+      setUpgradeError("無法與伺服器取得連線。");
     }
   };
 
@@ -475,6 +541,81 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
                   確認修改資料 ✦
                 </button>
               </form>
+
+              {currentUser.is_guest && (
+                <div className="mt-6 bg-gradient-to-br from-violet-500/10 via-pink-500/10 to-amber-500/10 border border-[#FF799C]/30 p-5 rounded-[28px] relative overflow-hidden shadow-md">
+                  <div className="absolute top-0 right-0 bg-[#FF799C]/20 border-b border-l border-[#FF799C]/40 text-[#FF799C] text-[8px] font-mono font-bold px-2 py-0.5 rounded-bl-xl uppercase tracking-widest">
+                    臨時訪客
+                  </div>
+                  
+                  <h4 className="text-sm font-serif font-bold text-[#FF799C] mb-1 flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 animate-bounce text-amber-400" />
+                    升級為正式應援帳號 ✦
+                  </h4>
+                  <p className="text-[11px] text-[#6E4B55]/70 mb-3.5 leading-relaxed">
+                    您目前使用<strong>臨時訪客帳號</strong>。為了在清理快取或<strong>更換設備登入</strong>時，所有應援足跡、星星幣和星寵記錄不丟失，請在下方設定信箱與密碼升級：
+                  </p>
+
+                  <form onSubmit={handleUpgradeGuest} className="space-y-3 text-xs">
+                    {upgradeError && (
+                      <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-600 rounded-xl flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+                        <span>{upgradeError}</span>
+                      </div>
+                    )}
+
+                    {upgradeSuccess && (
+                      <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <span>🎉 帳號成功升級！您現在可以在任何設備登入了。</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-[#6E4B55]/70 mb-1">自訂應援暱稱 Username</label>
+                      <input
+                        type="text"
+                        placeholder={currentUser.username}
+                        value={upgradeUsername}
+                        onChange={(e) => setUpgradeUsername(e.target.value)}
+                        className="w-full bg-white/70 border border-[#FF799C]/15 focus:border-[#FF799C] focus:outline-none text-[#6E4B55] px-3 py-2 rounded-xl transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-[#6E4B55]/70 mb-1">設定正式信箱 Email *</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="e.g. yourname@domain.com"
+                        value={upgradeEmail}
+                        onChange={(e) => setUpgradeEmail(e.target.value)}
+                        className="w-full bg-white/70 border border-[#FF799C]/15 focus:border-[#FF799C] focus:outline-none text-[#6E4B55] px-3 py-2 rounded-xl transition-all font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-[#6E4B55]/70 mb-1">設定正式密碼 Password *</label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="至少 6 位數安全密碼"
+                        value={upgradePassword}
+                        onChange={(e) => setUpgradePassword(e.target.value)}
+                        className="w-full bg-white/70 border border-[#FF799C]/15 focus:border-[#FF799C] focus:outline-none text-[#6E4B55] px-3 py-2 rounded-xl transition-all"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-violet-400 to-pink-400 hover:opacity-95 text-white font-medium text-xs py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      <span>綁定信箱密碼，一鍵升級 🚀</span>
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
 
             {/* Right: Submissions Feed (5 Columns) */}
@@ -646,6 +787,21 @@ export default function UserModule({ currentUser, onLoginSuccess, onLogout, refr
               >
                 <LogIn className="h-4 w-4" />
                 <span>立即登入 ✦</span>
+              </button>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-[#FF799C]/15"></div>
+                <span className="flex-shrink mx-3.5 text-[9px] font-mono text-[#6E4B55]/40 uppercase tracking-widest">或 OR</span>
+                <div className="flex-grow border-t border-[#FF799C]/15"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleQuickJoin}
+                className="w-full bg-gradient-to-r from-violet-400 via-pink-400 to-[#FF9EAA] hover:opacity-95 text-white font-semibold text-sm py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="h-4 w-4 text-amber-200 animate-pulse" />
+                <span>快速玩 / 一鍵訪客加入 🚀</span>
               </button>
             </form>
 

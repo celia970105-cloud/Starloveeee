@@ -6,6 +6,16 @@ export interface User {
   avatar: string;
   background: string;
   star_coins?: number;
+  is_guest?: boolean;
+  solo_pet?: {
+    name: string;
+    fullness: number;
+    love: number;
+    coins: number;
+    furniture: any[];
+    fridge: Record<string, number>;
+    custom_skin: string;
+  };
 }
 
 export interface PhotoPost {
