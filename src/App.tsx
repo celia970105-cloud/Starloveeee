@@ -241,7 +241,6 @@ export default function App() {
               >
                 <option value="zh-TW">繁體</option>
                 <option value="zh-CN">简体</option>
-                <option value="en">English</option>
               </select>
             </div>
 
